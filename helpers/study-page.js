@@ -1,5 +1,5 @@
 import { pageState, studyBackgroundState, timerState } from "./state.js";
-import { enableWakeLock, disableWakeLock } from "./wakeLock.js";
+import { enableWakeLock, disableWakeLock } from "./wakelock.js";
 
 const glowColors = [
     "#60a5fa",

@@ -6,7 +6,7 @@ import {
 } from "./helpers/study-page.js";
 import { updateDropdown, updateProjectsPageVisibility, drawLineSeparator } from "./helpers/projects-page.js";
 import { pageNames, pageState } from "./helpers/state.js";
-import { disableWakeLock } from "./helpers/wakeLock.js";
+import { disableWakeLock } from "./helpers/wakelock.js";
 
 const mainCanvas = document.getElementById("main");
 const mainCtx = mainCanvas.getContext("2d");

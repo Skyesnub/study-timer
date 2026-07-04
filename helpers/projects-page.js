@@ -23,7 +23,7 @@ input.addEventListener("keydown", (event) => {
                 }
             }
             if (!repeated) {
-                projectsArray.push(text);
+                projectsArray.push(createProjectObject(text));
                 updateDropdown();
                 input.value = "";
             } else {
@@ -35,6 +35,14 @@ input.addEventListener("keydown", (event) => {
     }
 });
 
+function createProjectObject(title) {
+    return {
+        id: crypto.randomUUID(),
+        name: title,
+        totalStudyTime: 0,
+        sessions: []
+    }
+}
 export function updateDropdown() {
     dropdown.innerHTML = ""; // Remove old options
 
@@ -49,10 +57,11 @@ export function updateDropdown() {
 
     for (const project of projectsArray) {
         const option = document.createElement("option");
-        option.value = project;
-        option.textContent = project;
+        option.value = project.id;
+        option.textContent = project.name;
         dropdown.appendChild(option);
-    }
+    } 
+    console.log(projectsArray)
 }
 
 export function updateProjectsPageVisibility() {
