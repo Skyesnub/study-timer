@@ -35,15 +35,15 @@
 
 #projects-page-content {
     position: absolute;
-    top: 430px;
+    top: 410px;
     left: 200px;
     width: 1400px; 
-    display: flex; /* Sits the two halves side-by-side */
+    display: flex;
     z-index: 1;
 }
 
 #projects-left-half, #projects-right-half {
-  flex: 1; /* Gives each half exactly 700px of space */
+  flex: 1;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -55,15 +55,15 @@
     display:none;
 }
 
-#no-repeat-warning {
-    position: absolute;
-    top: 45px;
-    left: 25%;
-    transform: translateX(-50%);
+#no-repeat-warning,
+#no-repeat-course-warning {
     color: red;
+    margin: 0;
+    text-align: center;
 }
 
-#no-repeat-warning.hidden {
+#no-repeat-warning.hidden,
+#no-repeat-course-warning.hidden {
     display: none;
 }
 
@@ -73,24 +73,44 @@
     gap: 8px;
 }
 
-#project-input {
+.dropdown-action-group {
     display: flex;
     justify-content: center;
-    gap: 24px;
+    align-items: center;
+    gap: 8px;
+}
+
+#project-input,
+#course-input {
+    display: flex;
+    justify-content: center;
+}
+#project-dropdown,
+#course-dropdown,
+#project-nest-input {
+    display: flex;
+    justify-content: center;
 }
 
 /* End of project page content */
 
 #timer-page-content {
     position: absolute;
-    top: 430px;
+    top: 330px;
     left: 200px;
     width: 1400px;
     z-index: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 24px;
+    gap: 12px;
+}
+
+.timer-select-group {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
 }
 
 

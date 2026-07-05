@@ -1,5 +1,6 @@
 import { pageState, studyBackgroundState, timerState } from "./state.js";
 import { enableWakeLock, disableWakeLock } from "./wakelock.js";
+import { coursesArray } from "./projects-page.js";
 
 const glowColors = [
     "#60a5fa",
@@ -19,12 +20,16 @@ let mainCanvas;
 let mainCtx;
 let timerPageContent;
 let timerHTML;
+let timerClassSelect;
+let timerProjectSelect;
 
 export function initStudyPage(options) {
     mainCanvas = options.mainCanvas;
     mainCtx = options.mainCtx;
     timerPageContent = document.getElementById("timer-page-content");
     timerHTML = document.getElementById("timer");
+    timerClassSelect = document.getElementById("timer-page-class-select");
+    timerProjectSelect = document.getElementById("timer-page-project-select");
 
     document.getElementById("pause-timer-button").onclick = () => {
         pauseTimer(); disableWakeLock();
@@ -35,6 +40,14 @@ export function initStudyPage(options) {
     document.getElementById("finish-timer-button").onclick = () => {
         finishTimer(); disableWakeLock();
     } 
+
+    timerClassSelect.addEventListener("change", () => {
+        updateTimerPageProjectDropdown();
+    });
+
+    // In case a session was already running when the page loaded (e.g. a refresh),
+    // make sure the selects reflect that by staying locked.
+    setSelectionLocked(timerState.running);
 
     updateTimerDisplay();
     updateStudyPageVisibility();
@@ -52,7 +65,88 @@ export function updateStudyPageVisibility() {
     const onTimerPage = pageState.currentPage === "timer";
 
     timerPageContent.classList.toggle("hidden", !onTimerPage);
+
+    if (onTimerPage) {
+        updateTimerPageClassDropdown();
+        updateTimerPageProjectDropdown();
+    }
+
     updateStudyBackground();
+}
+
+export function updateTimerPageClassDropdown() {
+    const previouslySelected = timerClassSelect.value;
+
+    timerClassSelect.innerHTML = ""; // Remove old options
+
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "Select a class";
+    placeholder.disabled = true;
+    timerClassSelect.appendChild(placeholder);
+
+    for (const course of coursesArray) {
+        const option = document.createElement("option");
+        option.value = course.id;
+        option.textContent = course.name;
+        timerClassSelect.appendChild(option);
+    }
+
+    if (coursesArray.some(course => course.id === previouslySelected)) {
+        timerClassSelect.value = previouslySelected;
+    } else {
+        placeholder.selected = true;
+    }
+}
+
+export function updateTimerPageProjectDropdown() {
+    timerProjectSelect.innerHTML = ""; // Remove old options
+
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "Select a project";
+    placeholder.selected = true;
+    placeholder.disabled = true;
+    timerProjectSelect.appendChild(placeholder);
+
+    const selectedCourse = coursesArray.find(course => course.id === timerClassSelect.value);
+    if (selectedCourse) {
+        for (const project of selectedCourse.projects) {
+            const option = document.createElement("option");
+            option.value = project.id;
+            option.textContent = project.name;
+            timerProjectSelect.appendChild(option);
+        }
+    }
+}
+
+function setSelectionLocked(locked) {
+    timerClassSelect.disabled = locked;
+    timerProjectSelect.disabled = locked;
+}
+
+function logStudySession() {
+    if (timerState.totalTime <= 0) {
+        return; // Nothing meaningful to log
+    }
+
+    const course = coursesArray.find(course => course.id === timerClassSelect.value);
+    const project = course
+        ? course.projects.find(project => project.id === timerProjectSelect.value)
+        : undefined;
+
+    if (!project) {
+        console.log("No project selected — session was not logged.");
+        return;
+    }
+
+    project.sessions.push({
+        date: new Date().toISOString(),
+        duration: timerState.totalTime
+    });
+    project.totalStudyTime += timerState.totalTime;
+
+    console.log(`Logged ${timerState.totalTime.toFixed(1)}s to "${project.name}"`, project);
 }
 
 export function redrawStudyPageBackground() {
@@ -113,9 +207,9 @@ function drawRoundedRect(x, y, width, height, radius) {
 
 function drawTimerButtonBackplate() {
     let width = 225;
-    let height = 100;
+    let height = 65;
     let x = (mainCanvas.width - width) / 2;
-    let y = 315;
+    let y = 340;
 
     mainCtx.save();
     mainCtx.globalCompositeOperation = "source-over";
@@ -128,9 +222,9 @@ function drawTimerButtonBackplate() {
 
     mainCtx.save();
     width = 235;
-    height = 110;
+    height = 75;
     x = (mainCanvas.width - width) / 2;
-    y = 310;
+    y = 335;
     mainCtx.fillStyle = "rgba(186, 180, 229, 0.4)";
     drawRoundedRect(x, y, width, height, 26);
     mainCtx.fill();
@@ -228,6 +322,7 @@ function resumeTimer() {
         timerState.running = true;
         timerState.paused = false;
         timerState.startTime = Date.now();
+        setSelectionLocked(true);
         updateStudyBackground();
     }
 }
@@ -243,11 +338,14 @@ function pauseTimer() {
 }
 
 function finishTimer() {
+    logStudySession();
+
     timerState.running = false;
     timerState.paused = false;
     timerState.startTime = 0;
     timerState.savedTime = 0;
     timerState.totalTime = 0;
+    setSelectionLocked(false);
     updateTimerDisplay();
     updateStudyBackground();
 }

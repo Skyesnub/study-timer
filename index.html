@@ -21,6 +21,14 @@
     </div>
 
     <div id="timer-page-content" class="hidden">
+        <div class="timer-select-group">
+            <label for="timer-page-class-select">Select a class</label>
+            <select id="timer-page-class-select"></select>
+        </div>
+        <div class="timer-select-group">
+            <label for="timer-page-project-select">Select a project</label>
+            <select id="timer-page-project-select"></select>
+        </div>
         <div id="timer-controls">
             <button id="pause-timer-button" class="timer-icon-button" aria-label="Pause timer" title="Pause">
                 <img src="images/pause-icon.png" alt="">
@@ -36,17 +44,33 @@
     </div>
     <div id="projects-page-content" class="hidden">
         <div id="projects-left-half">
-            
+
+            <p>Enter course name:</p>
+            <input id="course-input" type="text" placeholder="Enter course name">
+            <p id="no-repeat-course-warning" class="hidden">Please do not repeat course names.</p>
+
+            <p>Nest your project under:</p>
+            <select id="project-nest-input"></select>
+
+            <p>Enter project name:</p>
             <input id="project-input" type="text" placeholder="Enter project name">
             <p id="no-repeat-warning" class="hidden">Please do not repeat project names.</p>
 
-            <select id="project-dropdown"></select>
         </div>
         <div id="projects-right-half">
+
+            <div class="dropdown-action-group">
+                <select id="course-dropdown"></select>
+                <button id="delete-course-button">Delete Course</button>
+            </div>
+
+            <div class="dropdown-action-group">
+                <select id="project-dropdown"></select>
+                <button id="delete-project-button">Delete Project</button>
+            </div>
+
             <button id="hi">hi</button>
         </div>
-
-
     </div>
     
 
