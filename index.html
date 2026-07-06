@@ -9,97 +9,122 @@
     <link rel="stylesheet" href="locations.css">
 
 </head>
-<body>
-    <canvas id="backer" width="1600" height="800"></canvas>
-    <canvas id="main" width="1400" height="700"></canvas>
-    <canvas id="sidebar" width="199" height="700"></canvas>
-    <canvas id="topbar" width="1600" height="99"></canvas>
-
-    <div id="main-content">
-        <h1 id="page-title"></h1>
-        <p id="page-description"></p>
-    </div>
-
-    <div id="timer-page-content" class="hidden">
-        <div class="label-select-group">
-            <label for="timer-page-class-select">Select a class</label>
-            <select id="timer-page-class-select"></select>
-        </div>
-        <div class="label-select-group">
-            <label for="timer-page-project-select">Select a project</label>
-            <select id="timer-page-project-select"></select>
-        </div>
-        <div id="timer-controls">
-            <button id="pause-timer-button" class="timer-icon-button" aria-label="Pause timer" title="Pause">
-                <img src="images/pause-icon.png" alt="">
-            </button>
-            <button id="finish-timer-button" class="timer-icon-button" aria-label="Finish timer" title="Finish">
-                <img src="images/finish-icon.png" alt="">
-            </button>
-            <button id="return-timer-button" class="timer-icon-button" aria-label="Return to timer" title="Return">
-                <img src="images/return-icon.png" alt="">
-            </button>
-        </div>
-        <h1 id="timer">00:00:00</h1>
-    </div>
-    <div id="projects-page-content" class="hidden">
-        <div id="projects-left-half">
-
-            <p>Enter course name:</p>
-            <input id="course-input" type="text" placeholder="Enter course name">
-            <p id="no-repeat-course-warning" class="hidden">Please do not repeat course names.</p>
-
-            <p>Nest your project under:</p>
-            <select id="project-nest-input"></select>
-
-            <p>Enter project name:</p>
-            <input id="project-input" type="text" placeholder="Enter project name">
-            <p id="no-repeat-warning" class="hidden">Please do not repeat project names.</p>
-
-        </div>
-        <div id="projects-right-half">
-
-            <div class="dropdown-action-group">
-                <select id="course-dropdown"></select>
-                <button id="delete-course-button">Delete Course</button>
-            </div>
-
-            <div class="dropdown-action-group">
-                <select id="project-dropdown"></select>
-                <button id="delete-project-button">Delete Project</button>
-            </div>
-
-            <button id="hi">hi</button>
+<body class="logged-out">
+    <div id="auth-page-content">
+        <div class="auth-card">
+            <h1 id="auth-heading">Log in</h1>
+            <input id="auth-email-input" type="email" placeholder="Email" autocomplete="username">
+            <input id="auth-password-input" type="password" placeholder="Password" autocomplete="current-password">
+            <p id="auth-error-message" class="hidden"></p>
+            <button id="auth-submit-button">Log in</button>
+            <button id="auth-toggle-mode-button">Need an account? Sign up</button>
         </div>
     </div>
-    <div id="progress-page-content" class="hidden">
-        <div id="progress-left-half">
+
+    <div id="app-shell">
+        <canvas id="backer" width="1600" height="800"></canvas>
+        <canvas id="main" width="1400" height="700"></canvas>
+        <canvas id="sidebar" width="199" height="700"></canvas>
+        <canvas id="topbar" width="1600" height="99"></canvas>
+
+        <div id="main-content">
+            <h1 id="page-title"></h1>
+            <p id="page-description"></p>
+        </div>
+
+        <div id="timer-page-content" class="hidden">
             <div class="label-select-group">
-                <label for="progress-page-class-select">Select a class</label>
-                <select id="progress-page-class-select"></select>
+                <label for="timer-page-class-select">Select a class</label>
+                <select id="timer-page-class-select"></select>
             </div>
             <div class="label-select-group">
-                <label for="progress-page-project-select">Select a project</label>
-                <select id="progress-page-project-select"></select>
+                <label for="timer-page-project-select">Select a project</label>
+                <select id="timer-page-project-select"></select>
+            </div>
+            <div id="timer-controls">
+                <button id="pause-timer-button" class="timer-icon-button" aria-label="Pause timer" title="Pause">
+                    <img src="images/pause-icon.png" alt="">
+                </button>
+                <button id="finish-timer-button" class="timer-icon-button" aria-label="Finish timer" title="Finish">
+                    <img src="images/finish-icon.png" alt="">
+                </button>
+                <button id="return-timer-button" class="timer-icon-button" aria-label="Return to timer" title="Return">
+                    <img src="images/return-icon.png" alt="">
+                </button>
+            </div>
+            <h1 id="timer">00:00:00</h1>
+        </div>
+        <div id="projects-page-content" class="hidden">
+            <div id="projects-left-half">
+
+                <p>Enter course name:</p>
+                <input id="course-input" type="text" placeholder="Enter course name">
+                <p id="no-repeat-course-warning" class="hidden">Please do not repeat course names.</p>
+
+                <p>Nest your project under:</p>
+                <select id="project-nest-input"></select>
+
+                <p>Enter project name:</p>
+                <input id="project-input" type="text" placeholder="Enter project name">
+                <p id="no-repeat-warning" class="hidden">Please do not repeat project names.</p>
+
+            </div>
+            <div id="projects-right-half">
+
+                <div class="dropdown-action-group">
+                    <select id="course-dropdown"></select>
+                    <button id="delete-course-button">Delete Course</button>
+                </div>
+
+                <div class="dropdown-action-group">
+                    <select id="project-dropdown"></select>
+                    <button id="delete-project-button">Delete Project</button>
+                </div>
+
+                <button id="hi">hi</button>
             </div>
         </div>
-        <div id="progress-right-half">
-            <div id="progress-stats">
-                <p id="progress-stats-placeholder">Select a class or project to see its stats.</p>
+        <div id="progress-page-content" class="hidden">
+            <div id="progress-left-half">
+                <div class="label-select-group">
+                    <label for="progress-page-class-select">Select a class</label>
+                    <select id="progress-page-class-select"></select>
+                </div>
+                <div class="label-select-group">
+                    <label for="progress-page-project-select">Select a project</label>
+                    <select id="progress-page-project-select"></select>
+                </div>
+            </div>
+            <div id="progress-right-half">
+                <div id="progress-stats">
+                    <p id="progress-stats-placeholder">Select a class or project to see its stats.</p>
+                </div>
             </div>
         </div>
-    </div>
-    
+        <div id="settings-page-content" class="hidden">
+            <div class="label-select-group">
+                <label for="shape-color-select">Shape color</label>
+                <select id="shape-color-select"></select>
+            </div>
+            <div class="label-select-group">
+                <label for="theme-color-select">Theme color</label>
+                <select id="theme-color-select"></select>
+            </div>
+            <button id="sign-out-button">Sign out</button>
+        </div>
+        
 
-    <h1 id="optionsheader">Options</h1>
-    <!--Sidebar Buttons-->
-    <div>
-        <button id="timer-page-button" class="sidebar-button selected">Study Timer</button>
-        <button id="projects-page-button" class="sidebar-button">Projects</button>
-        <button id="progress-page-button" class="sidebar-button">Progress Summary</button>
-        <button id="settings-page-button" class="sidebar-button">Settings</button>
+        <h1 id="optionsheader">Options</h1>
+        <!--Sidebar Buttons-->
+        <div>
+            <button id="timer-page-button" class="sidebar-button selected">Study Timer</button>
+            <button id="projects-page-button" class="sidebar-button">Projects</button>
+            <button id="progress-page-button" class="sidebar-button">Progress Summary</button>
+            <button id="settings-page-button" class="sidebar-button">Settings</button>
+        </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="main.js" type="module"></script>
 </body>
 </html>

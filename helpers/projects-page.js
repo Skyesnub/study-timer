@@ -1,4 +1,5 @@
 import { pageState } from "./state.js";
+import { db } from "./db.js";
 
 const mainCanvas = document.getElementById("main");
 const mainCtx = mainCanvas.getContext("2d");
@@ -20,7 +21,7 @@ const courseNestInput = document.getElementById("project-nest-input");
 const deleteCourseButton = document.getElementById("delete-course-button");
 const deleteProjectButton = document.getElementById("delete-project-button");
 
-courseInput.addEventListener("keydown", (event) => {
+courseInput.addEventListener("keydown", async (event) => {
     if (event.key === "Enter") {
         const text = courseInput.value.trim();
 
@@ -32,7 +33,18 @@ courseInput.addEventListener("keydown", (event) => {
                 }
             }
             if (!repeated) {
-                coursesArray.push(createCourseObject(text));
+                const { data, error } = await db
+                    .from("courses")
+                    .insert({ name: text })
+                    .select()
+                    .single();
+
+                if (error) {
+                    console.error(error);
+                    return;
+                }
+
+                coursesArray.push(mapCourseFromDb(data));
                 updateCourseDropdown();
                 updateCourseNestDropdown();
                 courseInput.value = "";
@@ -44,7 +56,7 @@ courseInput.addEventListener("keydown", (event) => {
     }
 });
 
-projectInput.addEventListener("keydown", (event) => {
+projectInput.addEventListener("keydown", async (event) => {
     if (event.key === "Enter") {
         const text = projectInput.value.trim();
         const course = getSelectedCourseForNesting();
@@ -62,7 +74,18 @@ projectInput.addEventListener("keydown", (event) => {
                 }
             }
             if (!repeated) {
-                course.projects.push(createProjectObject(text));
+                const { data, error } = await db
+                    .from("projects")
+                    .insert({ name: text, course_id: course.id })
+                    .select()
+                    .single();
+
+                if (error) {
+                    console.error(error);
+                    return;
+                }
+
+                course.projects.push(mapProjectFromDb(data));
                 updateDropdown();
                 projectInput.value = "";
             } else {
@@ -78,12 +101,19 @@ courseDropdown.addEventListener("change", () => {
     updateDropdown();
 });
 
-deleteCourseButton.addEventListener("click", () => {
+deleteCourseButton.addEventListener("click", async () => {
     const course = getSelectedCourseForDeletion();
     if (!course) return;
 
     const confirmed = window.confirm(`Are you sure you want to delete "${course.name}"? This will also delete all of its projects.`);
     if (confirmed) {
+        const { error } = await db.from("courses").delete().eq("id", course.id);
+
+        if (error) {
+            console.error(error);
+            return;
+        }
+
         const idx = coursesArray.findIndex(c => c.id === course.id);
         if (idx !== -1) coursesArray.splice(idx, 1);
 
@@ -93,7 +123,7 @@ deleteCourseButton.addEventListener("click", () => {
     }
 });
 
-deleteProjectButton.addEventListener("click", () => {
+deleteProjectButton.addEventListener("click", async () => {
     const course = getSelectedCourseForDeletion();
     if (!course) return;
 
@@ -102,30 +132,84 @@ deleteProjectButton.addEventListener("click", () => {
 
     const confirmed = window.confirm(`Are you sure you want to delete "${project.name}"?`);
     if (confirmed) {
+        const { error: deleteError } = await db.from("projects").delete().eq("id", project.id);
+
+        if (deleteError) {
+            console.error(deleteError);
+            return;
+        }
+
         const idx = course.projects.findIndex(p => p.id === project.id);
         if (idx !== -1) course.projects.splice(idx, 1);
         course.totalStudyTime -= project.totalStudyTime;
+
+        // Keep the course's stored total in sync with the project we just removed.
+        const { error: updateError } = await db
+            .from("courses")
+            .update({ total_study_time: course.totalStudyTime })
+            .eq("id", course.id);
+
+        if (updateError) {
+            console.error(updateError);
+        }
 
         updateDropdown();
     }
 });
 
-function createCourseObject(title) {
+// Supabase columns are snake_case (total_study_time); the rest of the app
+// expects camelCase (totalStudyTime). These map database rows to the same
+// object shape the app already used, so nothing else has to change.
+function mapProjectFromDb(row) {
     return {
-        id: crypto.randomUUID(),
-        name: title,
-        totalStudyTime: 0,
-        projects: []
-    }
+        id: row.id,
+        name: row.name,
+        totalStudyTime: row.total_study_time,
+        sessions: (row.sessions || []).map(mapSessionFromDb)
+    };
 }
 
-function createProjectObject(title) {
+function mapCourseFromDb(row) {
     return {
-        id: crypto.randomUUID(),
-        name: title,
-        totalStudyTime: 0,
-        sessions: []
+        id: row.id,
+        name: row.name,
+        totalStudyTime: row.total_study_time,
+        projects: (row.projects || []).map(mapProjectFromDb)
+    };
+}
+
+function mapSessionFromDb(row) {
+    return {
+        date: row.date,
+        duration: row.duration
+    };
+}
+
+export async function loadCoursesFromDatabase() {
+    const { data, error } = await db
+        .from("courses")
+        .select("*, projects(*, sessions(*))")
+        .order("name", { ascending: true });
+
+    if (error) {
+        console.error(error);
+        return;
     }
+
+    coursesArray.length = 0;
+    coursesArray.push(...data.map(mapCourseFromDb));
+
+    updateCourseDropdown();
+    updateCourseNestDropdown();
+    updateDropdown();
+}
+
+export function clearCoursesArray() {
+    coursesArray.length = 0;
+
+    updateCourseDropdown();
+    updateCourseNestDropdown();
+    updateDropdown();
 }
 
 function getSelectedCourseForNesting() {

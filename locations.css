@@ -1,3 +1,90 @@
+/* Auth gate: while logged out, hide the app and show only the login card */
+
+body.logged-out #app-shell {
+    display: none;
+}
+
+#auth-page-content {
+    display: none;
+}
+
+body.logged-out #auth-page-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    inset: 0;
+    background: #12101c;
+}
+
+.auth-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 320px;
+    padding: 32px;
+    border-radius: 16px;
+    background: #ffffff;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+}
+
+.auth-card h1 {
+    margin: 0 0 4px 0;
+    color: #1f2937;
+    text-align: center;
+    font-size: 24px;
+}
+
+.auth-card input {
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    font-size: 15px;
+}
+
+.auth-card button {
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+}
+
+#auth-submit-button {
+    background: #6366f1;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+#auth-submit-button:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+#auth-toggle-mode-button {
+    background: transparent;
+    color: #6366f1;
+    font-weight: 500;
+    padding: 4px;
+}
+
+#auth-error-message {
+    margin: 0;
+    font-size: 14px;
+    text-align: center;
+}
+
+#auth-error-message.hidden {
+    display: none;
+}
+
+#auth-error-message.auth-error {
+    color: #dc2626;
+}
+
+#auth-error-message.auth-notice {
+    color: #059669;
+}
+
 /* Canvases */
 #backer {
     position: absolute;
@@ -222,6 +309,30 @@ body.study-mode #timer {
 }
 
 /* End of progress page content */
+
+/* Start of settings page content */
+
+#settings-page-content {
+    position: absolute;
+    top: 410px;
+    left: 200px;
+    width: 1400px;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+#settings-page-content.hidden {
+    display: none;
+}
+
+#sign-out-button {
+    margin-top: 12px;
+}
+
+/* End of settings page content */
 
 /* Sidebar button initiation */
 

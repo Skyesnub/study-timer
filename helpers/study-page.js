@@ -1,18 +1,8 @@
 import { pageState, studyBackgroundState, timerState } from "./state.js";
 import { enableWakeLock, disableWakeLock } from "./wakelock.js";
 import { coursesArray } from "./projects-page.js";
-
-const glowColors = [
-    "#60a5fa",
-    "#a78bfa",
-    "#cabeecff",
-    "#f472b6",
-    "#a5e2ccff",
-    "#81ddbbff",
-    "#f0df9dff",
-    "#fb7185",
-    "#22d3ee"
-];
+import { glowColorPalette, themeColors } from "./settings-page.js";
+import { db } from "./db.js";
 
 const glowShapeTypes = ["circle", "triangle", "square"];
 
@@ -57,7 +47,7 @@ export function initStudyPage(options) {
 
 export function drawNormalMainBackground() {
     mainCtx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
-    mainCtx.fillStyle = "#e2e0f1ff";
+    mainCtx.fillStyle = themeColors.background;
     mainCtx.fillRect(0, 0, mainCanvas.width, mainCanvas.height);
 }
 
@@ -125,7 +115,7 @@ function setSelectionLocked(locked) {
     timerProjectSelect.disabled = locked;
 }
 
-function logStudySession() {
+async function logStudySession() {
     if (timerState.totalTime <= 0) {
         return; // Nothing meaningful to log
     }
@@ -140,14 +130,45 @@ function logStudySession() {
         return;
     }
 
+    const duration = timerState.totalTime;
+    const newProjectTotal = project.totalStudyTime + duration;
+    const newCourseTotal = course.totalStudyTime + duration;
+
+    const { error: sessionError } = await db
+        .from("sessions")
+        .insert({ project_id: project.id, duration: duration });
+
+    if (sessionError) {
+        console.error(sessionError);
+        return;
+    }
+
+    const { error: projectError } = await db
+        .from("projects")
+        .update({ total_study_time: newProjectTotal })
+        .eq("id", project.id);
+
+    if (projectError) {
+        console.error(projectError);
+    }
+
+    const { error: courseError } = await db
+        .from("courses")
+        .update({ total_study_time: newCourseTotal })
+        .eq("id", course.id);
+
+    if (courseError) {
+        console.error(courseError);
+    }
+
     project.sessions.push({
         date: new Date().toISOString(),
-        duration: timerState.totalTime
+        duration: duration
     });
-    project.totalStudyTime += timerState.totalTime;
-    course.totalStudyTime += timerState.totalTime;
+    project.totalStudyTime = newProjectTotal;
+    course.totalStudyTime = newCourseTotal;
 
-    console.log(`Logged ${timerState.totalTime.toFixed(1)}s to "${project.name}"`, project);
+    console.log(`Logged ${duration.toFixed(1)}s to "${project.name}"`, project);
 }
 
 export function redrawStudyPageBackground() {
@@ -164,7 +185,7 @@ function createGlowShape() {
         radius: 35 + Math.random() * 95,
         speed: 0.5 + Math.random() * 0.75,
         blur: 14 + Math.random() * 22,
-        color: glowColors[Math.floor(Math.random() * glowColors.length)],
+        color: glowColorPalette[Math.floor(Math.random() * glowColorPalette.length)],
         alpha: 0.28 + Math.random() * 0.28,
         rotation: Math.random() * Math.PI * 2,
         rotationSpeed: -0.006 + Math.random() * 0.012
