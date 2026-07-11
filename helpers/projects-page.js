@@ -17,6 +17,14 @@ const courseNestInput = document.getElementById("project-nest-input");
 
 const deleteCourseButton = document.getElementById("delete-course-button");
 const deleteProjectButton = document.getElementById("delete-project-button");
+const renameCourseButton = document.getElementById("rename-course-button");
+const renameProjectButton = document.getElementById("rename-project-button");
+
+const sessionsList = document.getElementById("sessions-list");
+const sessionDateInput = document.getElementById("session-date-input");
+const sessionDurationInput = document.getElementById("session-duration-input");
+const sessionWarning = document.getElementById("session-warning");
+const addSessionButton = document.getElementById("add-session-button");
 
 courseInput.addEventListener("keydown", async (event) => {
     if (event.key === "Enter") {
@@ -99,7 +107,7 @@ courseDropdown.addEventListener("change", () => {
 });
 
 deleteCourseButton.addEventListener("click", async () => {
-    const course = getSelectedCourseForDeletion();
+    const course = getSelectedManagedCourse();
     if (!course) return;
 
     const confirmed = window.confirm(`Are you sure you want to delete "${course.name}"? This will also delete all of its projects.`);
@@ -121,7 +129,7 @@ deleteCourseButton.addEventListener("click", async () => {
 });
 
 deleteProjectButton.addEventListener("click", async () => {
-    const course = getSelectedCourseForDeletion();
+    const course = getSelectedManagedCourse();
     if (!course) return;
 
     const project = course.projects.find(p => p.id === projectDropdown.value);
@@ -154,6 +162,234 @@ deleteProjectButton.addEventListener("click", async () => {
     }
 });
 
+renameCourseButton.addEventListener("click", async () => {
+    const course = getSelectedManagedCourse();
+    if (!course) return;
+
+    const newName = window.prompt("Rename course:", course.name);
+    if (newName === null) return; // cancelled
+
+    const trimmed = newName.trim();
+    if (!trimmed || trimmed === course.name) return;
+
+    const repeated = coursesArray.some(c => c.id !== course.id && c.name === trimmed);
+    if (repeated) {
+        window.alert("Another course already has that name.");
+        return;
+    }
+
+    const { error } = await db.from("courses").update({ name: trimmed }).eq("id", course.id);
+    if (error) {
+        console.error(error);
+        return;
+    }
+
+    course.name = trimmed;
+    updateCourseDropdown();
+    updateCourseNestDropdown();
+    updateDropdown();
+});
+
+renameProjectButton.addEventListener("click", async () => {
+    const course = getSelectedManagedCourse();
+    if (!course) return;
+
+    const project = course.projects.find(p => p.id === projectDropdown.value);
+    if (!project) return;
+
+    const newName = window.prompt("Rename project:", project.name);
+    if (newName === null) return; // cancelled
+
+    const trimmed = newName.trim();
+    if (!trimmed || trimmed === project.name) return;
+
+    const repeated = course.projects.some(p => p.id !== project.id && p.name === trimmed);
+    if (repeated) {
+        window.alert("This course already has a project with that name.");
+        return;
+    }
+
+    const { error } = await db.from("projects").update({ name: trimmed }).eq("id", project.id);
+    if (error) {
+        console.error(error);
+        return;
+    }
+
+    project.name = trimmed;
+    updateDropdown();
+});
+
+projectDropdown.addEventListener("change", () => {
+    renderSessionsList();
+});
+
+addSessionButton.addEventListener("click", async () => {
+    const course = getSelectedManagedCourse();
+    const project = course ? course.projects.find(p => p.id === projectDropdown.value) : undefined;
+
+    if (!project) {
+        sessionWarning.classList.remove("hidden");
+        return;
+    }
+    sessionWarning.classList.add("hidden");
+
+    const minutes = parseFloat(sessionDurationInput.value);
+    if (!minutes || minutes <= 0) {
+        return;
+    }
+
+    // Only a date is collected (not a time), so pin it to midday to avoid
+    // timezone conversion shifting it onto the wrong calendar day when
+    // displayed back.
+    const dateValue = sessionDateInput.value;
+    const isoDate = dateValue
+        ? new Date(dateValue + "T12:00:00").toISOString()
+        : new Date().toISOString();
+
+    const duration = Math.round(minutes * 60);
+
+    const { data, error: insertError } = await db
+        .from("sessions")
+        .insert({ project_id: project.id, duration: duration, date: isoDate })
+        .select()
+        .single();
+
+    if (insertError) {
+        console.error(insertError);
+        return;
+    }
+
+    const newProjectTotal = project.totalStudyTime + duration;
+    const newCourseTotal = course.totalStudyTime + duration;
+
+    const { error: projectError } = await db
+        .from("projects")
+        .update({ total_study_time: newProjectTotal })
+        .eq("id", project.id);
+    if (projectError) console.error(projectError);
+
+    const { error: courseError } = await db
+        .from("courses")
+        .update({ total_study_time: newCourseTotal })
+        .eq("id", course.id);
+    if (courseError) console.error(courseError);
+
+    project.sessions.push(mapSessionFromDb(data));
+    project.totalStudyTime = newProjectTotal;
+    course.totalStudyTime = newCourseTotal;
+
+    sessionDurationInput.value = "";
+    renderSessionsList();
+});
+
+async function deleteSession(course, project, session) {
+    if (!session.id) {
+        console.error("Cannot delete a session with no id — try reloading first.");
+        return;
+    }
+
+    const confirmed = window.confirm("Delete this study session? This can't be undone.");
+    if (!confirmed) return;
+
+    const { error: deleteError } = await db.from("sessions").delete().eq("id", session.id);
+    if (deleteError) {
+        console.error(deleteError);
+        return;
+    }
+
+    const newProjectTotal = project.totalStudyTime - session.duration;
+    const newCourseTotal = course.totalStudyTime - session.duration;
+
+    const { error: projectError } = await db
+        .from("projects")
+        .update({ total_study_time: newProjectTotal })
+        .eq("id", project.id);
+    if (projectError) console.error(projectError);
+
+    const { error: courseError } = await db
+        .from("courses")
+        .update({ total_study_time: newCourseTotal })
+        .eq("id", course.id);
+    if (courseError) console.error(courseError);
+
+    const idx = project.sessions.findIndex(s => s.id === session.id);
+    if (idx !== -1) project.sessions.splice(idx, 1);
+    project.totalStudyTime = newProjectTotal;
+    course.totalStudyTime = newCourseTotal;
+
+    renderSessionsList();
+}
+
+function formatSessionDate(isoString) {
+    const date = new Date(isoString);
+    return date.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+}
+
+function formatSessionDuration(totalSeconds) {
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds / 60) % 60);
+
+    if (hours > 0) {
+        return `${hours}h ${minutes}m`;
+    }
+    return `${minutes}m`;
+}
+
+function renderSessionsList() {
+    sessionsList.innerHTML = "";
+
+    const course = getSelectedManagedCourse();
+    const project = course ? course.projects.find(p => p.id === projectDropdown.value) : undefined;
+
+    addSessionButton.disabled = !project;
+
+    if (!project) {
+        const placeholder = document.createElement("p");
+        placeholder.id = "sessions-placeholder";
+        placeholder.textContent = "Select a project above to add or remove sessions.";
+        sessionsList.appendChild(placeholder);
+        return;
+    }
+
+    if (project.sessions.length === 0) {
+        const empty = document.createElement("p");
+        empty.id = "sessions-placeholder";
+        empty.textContent = "No sessions logged yet for this project.";
+        sessionsList.appendChild(empty);
+        return;
+    }
+
+    const sortedSessions = [...project.sessions].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    for (const session of sortedSessions) {
+        const row = document.createElement("div");
+        row.classList.add("session-row");
+
+        const info = document.createElement("div");
+        info.classList.add("session-info");
+
+        const dateLine = document.createElement("span");
+        dateLine.classList.add("session-date");
+        dateLine.textContent = formatSessionDate(session.date);
+
+        const durationLine = document.createElement("span");
+        durationLine.classList.add("session-duration");
+        durationLine.textContent = formatSessionDuration(session.duration);
+
+        info.appendChild(dateLine);
+        info.appendChild(durationLine);
+
+        const deleteButton = document.createElement("button");
+        deleteButton.classList.add("session-delete-button");
+        deleteButton.textContent = "Delete";
+        deleteButton.addEventListener("click", () => deleteSession(course, project, session));
+
+        row.appendChild(info);
+        row.appendChild(deleteButton);
+        sessionsList.appendChild(row);
+    }
+}
+
 // Supabase columns are snake_case (total_study_time); the rest of the app
 // expects camelCase (totalStudyTime). These map database rows to the same
 // object shape the app already used, so nothing else has to change.
@@ -177,6 +413,7 @@ function mapCourseFromDb(row) {
 
 function mapSessionFromDb(row) {
     return {
+        id: row.id,
         date: row.date,
         duration: row.duration
     };
@@ -214,7 +451,7 @@ function getSelectedCourseForNesting() {
     return coursesArray.find(course => course.id === courseId);
 }
 
-function getSelectedCourseForDeletion() {
+function getSelectedManagedCourse() {
     const courseId = courseDropdown.value;
     return coursesArray.find(course => course.id === courseId);
 }
@@ -273,27 +510,36 @@ export function updateCourseNestDropdown() {
 }
 
 export function updateDropdown() {
+    const previouslySelected = projectDropdown.value;
+
     projectDropdown.innerHTML = ""; // Remove old options
 
     // Placeholder
     const placeholder = document.createElement("option");
     placeholder.value = "";
     placeholder.textContent = "Choose a project";
-    placeholder.selected = true;
     placeholder.disabled = true;
     projectDropdown.appendChild(placeholder);
     noRepeatWarning.classList.add("hidden")
 
-    const course = getSelectedCourseForDeletion();
-    if (course) {
-        for (const project of course.projects) {
-            const option = document.createElement("option");
-            option.value = project.id;
-            option.textContent = project.name;
-            projectDropdown.appendChild(option);
-        }
+    const course = getSelectedManagedCourse();
+    const projects = course ? course.projects : [];
+
+    for (const project of projects) {
+        const option = document.createElement("option");
+        option.value = project.id;
+        option.textContent = project.name;
+        projectDropdown.appendChild(option);
     }
+
+    if (projects.some(project => project.id === previouslySelected)) {
+        projectDropdown.value = previouslySelected;
+    } else {
+        placeholder.selected = true;
+    }
+
     console.log(course ? course.projects : [])
+    renderSessionsList();
 }
 
 export function updateProjectsPageVisibility() {
@@ -306,3 +552,4 @@ export function updateProjectsPageVisibility() {
 updateCourseDropdown();
 updateCourseNestDropdown();
 updateDropdown();
+sessionDateInput.valueAsDate = new Date();

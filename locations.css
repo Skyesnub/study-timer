@@ -313,21 +313,34 @@ body.study-mode #page-description {
 
 .dropdown-action-group {
     display: flex;
+    flex-wrap: wrap;
     gap: var(--space-2);
 }
 
 .dropdown-action-group select {
     flex: 1;
+    min-width: 140px;
 }
 
 .dropdown-action-group button {
     flex-shrink: 0;
     background: transparent;
-    color: #dc2626;
-    border: 1.5px solid #fecaca;
+    color: var(--accent-strong);
+    border: 1.5px solid var(--border);
+    padding: 10px 14px;
+    font-size: 14px;
 }
 
 .dropdown-action-group button:hover {
+    background: var(--accent-soft);
+}
+
+.dropdown-action-group button.button-danger {
+    color: #dc2626;
+    border-color: #fecaca;
+}
+
+.dropdown-action-group button.button-danger:hover {
     background: #fef2f2;
 }
 
@@ -339,6 +352,66 @@ body.study-mode #page-description {
 
 .warning-text.hidden {
     display: none;
+}
+
+/* ============================================================
+   Study sessions list (Projects page)
+   ============================================================ */
+
+#sessions-list {
+    display: flex;
+    flex-direction: column;
+    max-height: 280px;
+    overflow-y: auto;
+}
+
+#sessions-placeholder {
+    color: var(--ink-soft);
+    font-size: 14px;
+}
+
+.session-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.session-row:last-child {
+    border-bottom: none;
+}
+
+.session-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.session-date {
+    font-size: 14px;
+    color: var(--ink);
+    font-weight: 600;
+}
+
+.session-duration {
+    font-size: 13px;
+    color: var(--ink-soft);
+    font-family: var(--font-mono);
+}
+
+.session-delete-button {
+    flex-shrink: 0;
+    background: transparent;
+    color: #dc2626;
+    border: 1.5px solid #fecaca;
+    padding: 6px 12px;
+    font-size: 13px;
+}
+
+.session-delete-button:hover {
+    background: #fef2f2;
 }
 
 /* ============================================================

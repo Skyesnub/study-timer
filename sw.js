@@ -1,6 +1,6 @@
 // Bump this version string any time you deploy changes, so installed
 // PWAs pick up the new files instead of serving stale cached ones.
-const CACHE_NAME = "study-timer-cache-v2";
+const CACHE_NAME = "study-timer-cache-v3";
 
 const PRECACHE_FILES = [
     "./",

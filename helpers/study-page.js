@@ -164,9 +164,11 @@ async function logStudySession() {
     const newProjectTotal = project.totalStudyTime + duration;
     const newCourseTotal = course.totalStudyTime + duration;
 
-    const { error: sessionError } = await db
+    const { data: sessionData, error: sessionError } = await db
         .from("sessions")
-        .insert({ project_id: project.id, duration: duration });
+        .insert({ project_id: project.id, duration: duration })
+        .select()
+        .single();
 
     if (sessionError) {
         console.error(sessionError);
@@ -192,7 +194,8 @@ async function logStudySession() {
     }
 
     project.sessions.push({
-        date: new Date().toISOString(),
+        id: sessionData.id,
+        date: sessionData.date,
         duration: duration
     });
     project.totalStudyTime = newProjectTotal;
@@ -394,6 +397,22 @@ function updateTimerDisplay() {
 
 function resumeTimer() {
     if (!timerState.running || timerState.paused) {
+        // Only warn on a genuinely fresh start — once running, the selects
+        // are locked (see setSelectionLocked below), so a resume-from-pause
+        // can't have a different selection than what the warning already
+        // covered when the session first started.
+        const isFreshStart = !timerState.running;
+        const missingSelection = !timerClassSelect.value || !timerProjectSelect.value;
+
+        if (isFreshStart && missingSelection) {
+            const confirmed = window.confirm(
+                "You haven't selected both a class and a project. If you start now, this session's time won't be saved when you finish. Start anyway?"
+            );
+            if (!confirmed) {
+                return;
+            }
+        }
+
         timerState.running = true;
         timerState.paused = false;
         timerState.startTime = Date.now();

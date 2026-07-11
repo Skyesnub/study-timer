@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Lumen</title>
+    <title>Study Timer</title>
 
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#5b5fc7">
@@ -113,12 +113,31 @@
                     <h2>Manage</h2>
                     <div class="dropdown-action-group">
                         <select id="course-dropdown"></select>
-                        <button id="delete-course-button">Delete</button>
+                        <button id="rename-course-button">Rename</button>
+                        <button id="delete-course-button" class="button-danger">Delete</button>
                     </div>
                     <div class="dropdown-action-group">
                         <select id="project-dropdown"></select>
-                        <button id="delete-project-button">Delete</button>
+                        <button id="rename-project-button">Rename</button>
+                        <button id="delete-project-button" class="button-danger">Delete</button>
                     </div>
+                </div>
+
+                <div class="card">
+                    <h2>Study Sessions</h2>
+                    <div id="sessions-list">
+                        <p id="sessions-placeholder">Select a project above to add or remove sessions.</p>
+                    </div>
+                    <div class="label-select-group">
+                        <label for="session-date-input">Date</label>
+                        <input id="session-date-input" type="date">
+                    </div>
+                    <div class="label-select-group">
+                        <label for="session-duration-input">Duration (minutes)</label>
+                        <input id="session-duration-input" type="number" min="1" placeholder="e.g. 45">
+                    </div>
+                    <p id="session-warning" class="hidden warning-text">Select a project above first.</p>
+                    <button id="add-session-button" disabled>Add session</button>
                 </div>
             </section>
 
